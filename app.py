@@ -113,24 +113,23 @@ def build_user_prompt_draft(src: str) -> str:
 >>>
 """
 
-# ---- プロンプト（要約120字） ----
+# ---- プロンプト（要約140字） ----
 SYSTEM_SUMMARY = """あなたはSNS用の超短文要約の専門家です。
-必ず「120文字以内」の日本語で要約してください。
+必ず「140文字以内」の日本語で要約してください。
 改行・箇条書き・引用符・前置きは禁止。要約本文のみを出力してください。
-絵文字は文中にたくさん使ってください（単語にあった絵文字以外に、語呂合わせの絵文字でも構いません）。
 
 """
 
-def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
+def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
     """
     まず要約→ 文字数チェック → 超過なら短縮を再依頼、を最大 max_retry 回。
     """
     # 1st try: summarize the draft
     summary = client.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-5.0 mini",
         messages=[
             {"role": "system", "content": SYSTEM_SUMMARY},
-            {"role": "user", "content": f"次の本文を120文字以内で要約してください。\n\n本文：\n{draft}"},
+            {"role": "user", "content": f"次の本文を、SNS投稿用の140文字以内で要約してください。\n\n本文：\n{draft}"},
         ],
         temperature=0.4,
     ).choices[0].message.content.strip()
@@ -140,12 +139,12 @@ def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
 
     # Retry if too long
     for _ in range(max_retry):
-        if len(summary) <= 120:
+        if len(summary) <= 140:
             return summary
 
-        # ask to rewrite shorter, strictly <= 120
+        # ask to rewrite shorter, strictly <= 140
         summary = client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-5.0 mini",
             messages=[
                 {"role": "system", "content": SYSTEM_SUMMARY},
                 {"role": "user", "content": f"次の要約を、意味を保ったまま120文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
@@ -155,7 +154,7 @@ def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
         summary = " ".join(summary.splitlines()).strip()
 
     # 最後の保険：それでも超える場合は、末尾を切る（意味が欠ける可能性はあるが“厳守”優先）
-    return summary[:120]
+    return summary[:140]
 
 
 # ---- ボタン（本文生成 / 要約生成） ----
