@@ -116,7 +116,7 @@ if st.button("Bigin the draft.", disabled=not text):
         temperature=0.8,
     )
 
-output_text = res.choices[0].message.content
+    output_text = res.choices[0].message.content
 
-st.subheader("Generate output")
-st.code(output_text, language="markdown")
+    st.subheader("Generate output")
+    st.code(output_text, language="markdown")
