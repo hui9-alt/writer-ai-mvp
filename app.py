@@ -147,7 +147,7 @@ def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
             model="gpt-5.0 mini",
             messages=[
                 {"role": "system", "content": SYSTEM_SUMMARY},
-                {"role": "user", "content": f"次の要約を、意味を保ったまま120文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
+                {"role": "user", "content": f"次の要約を、意味を保ったまま140文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
             ],
             temperature=0.2,
         ).choices[0].message.content.strip()
@@ -162,7 +162,7 @@ def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
 if st.button("Begin the draft.", disabled=not text):
     # 本文生成
     res = client.chat.completions.create(
-        model="gpt-4.1",
+        model="gpt-5.0 mini",
         messages=[
             {"role": "system", "content": SYSTEM_DRAFT},
             {"role": "user", "content": build_user_prompt_draft(text)},
@@ -171,17 +171,17 @@ if st.button("Begin the draft.", disabled=not text):
     )
     st.session_state.draft_text = res.choices[0].message.content
 
-    # すぐ要約も生成（120字厳守）
-    st.session_state.summary_text = summarize_to_120_chars(st.session_state.draft_text)
+    # すぐ要約も生成（140字厳守）
+    st.session_state.summary_text = summarize_to_140_chars(st.session_state.draft_text)
 
 
 # ---- 出力（要約 → 本文） ----
 
 
 if st.session_state.summary_text:
-    st.subheader("🧠 要約（120文字以内・コピー用）")
+    st.subheader("🧠 要約（140文字以内・コピー用）")
     st.code(st.session_state.summary_text, language="text")
-    st.caption(f"文字数: {len(st.session_state.summary_text)} / 120")
+    st.caption(f"文字数: {len(st.session_state.summary_text)} / 140")
     st.divider()
 
 if st.session_state.draft_text:
