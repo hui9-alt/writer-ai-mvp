@@ -159,9 +159,7 @@ def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
 
 
 # ---- ボタン（本文生成 / 要約生成） ----
-col1, col2 = st.columns(2)
 
-with col1:
 if st.button("Begin the draft.", disabled=not text):
     # 本文生成
     res = client.chat.completions.create(
