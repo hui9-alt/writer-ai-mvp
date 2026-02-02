@@ -102,6 +102,7 @@ def build_user_prompt_draft(src: str) -> str:
 ・「なぜそう言えるのか」という根拠を最低2つ以上入れる
 ・絵文字を適度に入れる（多すぎない）
 ・思想エッセイ風で、読者に問いかける構成にする
+・入力された文章のそのままの表現は使用しない。
 
 出力は【1パターンのみ】とし、完成度を最大化してください。
 文字数はパターンおよそ2000文字前後。
@@ -161,33 +162,34 @@ def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("本文を作る", disabled=not text):
-        res = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": SYSTEM_DRAFT},
-                {"role": "user", "content": build_user_prompt_draft(text)},
-            ],
-            temperature=0.8,
-        )
-        st.session_state.draft_text = res.choices[0].message.content
-        # 本文を作り直したら要約はリセット（混在防止）
-        st.session_state.summary_text = ""
+if st.button("Begin the draft.", disabled=not text):
+    # 本文生成
+    res = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {"role": "system", "content": SYSTEM_DRAFT},
+            {"role": "user", "content": build_user_prompt_draft(text)},
+        ],
+        temperature=0.8,
+    )
+    st.session_state.draft_text = res.choices[0].message.content
 
-with col2:
-    if st.button("要約を作る（120文字）", disabled=not st.session_state.draft_text):
-        st.session_state.summary_text = summarize_to_120_chars(st.session_state.draft_text)
+    # すぐ要約も生成（120字厳守）
+    st.session_state.summary_text = summarize_to_120_chars(st.session_state.draft_text)
+
 
 # ---- 出力（要約 → 本文） ----
 
 
 if st.session_state.summary_text:
-    st.subheader("🧠 要約（140文字以内・コピー用）")
+    st.subheader("🧠 要約（120文字以内・コピー用）")
     st.code(st.session_state.summary_text, language="text")
     st.caption(f"文字数: {len(st.session_state.summary_text)} / 120")
+    st.divider()
 
 if st.session_state.draft_text:
     st.subheader("✍️ 本文（コピー用）")
     st.code(st.session_state.draft_text, language="markdown")
+
 
 
