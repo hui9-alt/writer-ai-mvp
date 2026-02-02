@@ -9,11 +9,11 @@ load_dotenv()
 # APIキーを使ってクライアント作成
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.title("Writer AI MVP（主張→生成）")
+st.title("Writer AI")
 
-text = st.text_area("文章を入力", height=200)
+text = st.text_area("Idea Terminal", height=200)
 
-if st.button("主張を5つ生成", disabled=not text):
+if st.button("Bigin the draft.", disabled=not text):
     system = """あなたは思想系SNSコンテンツの編集者兼ライターです。
 抽象的な文章を、一般読者にも伝わるSNS投稿用エッセイに変換する専門家です。
 
@@ -116,5 +116,7 @@ if st.button("主張を5つ生成", disabled=not text):
         temperature=0.8,
     )
 
-    st.subheader("生成結果（3パターン）")
-    st.write(res.choices[0].message.content)
+output_text = res.choices[0].message.content
+
+st.subheader("Generate output")
+st.code(output_text, language="markdown")
