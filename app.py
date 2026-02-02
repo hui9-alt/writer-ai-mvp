@@ -178,12 +178,16 @@ with col2:
     if st.button("要約を作る（120文字）", disabled=not st.session_state.draft_text):
         st.session_state.summary_text = summarize_to_120_chars(st.session_state.draft_text)
 
-# ---- 出力 ----
-if st.session_state.draft_text:
-    st.subheader("本文（コピー用）")
-    st.code(st.session_state.draft_text, language="markdown")
+# ---- 出力（要約 → 本文） ----
+
 
 if st.session_state.summary_text:
-    st.subheader("要約（120文字以内・コピー用）")
+    st.subheader("🧠 要約（140文字以内・コピー用）")
     st.code(st.session_state.summary_text, language="text")
     st.caption(f"文字数: {len(st.session_state.summary_text)} / 120")
+
+if st.session_state.draft_text:
+    st.subheader("✍️ 本文（コピー用）")
+    st.code(st.session_state.draft_text, language="markdown")
+
+
