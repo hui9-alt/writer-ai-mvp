@@ -126,7 +126,7 @@ def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
     """
     # 1st try: summarize the draft
     summary = client.chat.completions.create(
-        model="gpt-5.0 mini",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": SYSTEM_SUMMARY},
             {"role": "user", "content": f"次の本文を、SNS投稿用の140文字以内で要約してください。\n\n本文：\n{draft}"},
@@ -144,7 +144,7 @@ def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
 
         # ask to rewrite shorter, strictly <= 140
         summary = client.chat.completions.create(
-            model="gpt-5.0 mini",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": SYSTEM_SUMMARY},
                 {"role": "user", "content": f"次の要約を、意味を保ったまま140文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
@@ -162,7 +162,7 @@ def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
 if st.button("Begin the draft.", disabled=not text):
     # 本文生成
     res = client.chat.completions.create(
-        model="gpt-5.0 mini",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": SYSTEM_DRAFT},
             {"role": "user", "content": build_user_prompt_draft(text)},
