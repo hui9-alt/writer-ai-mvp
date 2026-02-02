@@ -105,7 +105,6 @@ def build_user_prompt_draft(src: str) -> str:
 ・入力された文章のそのままの表現は使用しない。
 
 出力は【1パターンのみ】とし、完成度を最大化してください。
-文字数はパターンおよそ2000文字前後。
 
 元の文章：
 <<<
@@ -113,51 +112,7 @@ def build_user_prompt_draft(src: str) -> str:
 >>>
 """
 
-# ---- プロンプト（要約140字） ----
-SYSTEM_SUMMARY = """あなたはSNS用の超短文要約の専門家です。
-必ず「140文字以内」の日本語で要約してください。
-改行・箇条書き・引用符・前置きは禁止。要約本文のみを出力してください。
-
-"""
-
-def summarize_to_140_chars(draft: str, max_retry: int = 3) -> str:
-    """
-    まず要約→ 文字数チェック → 超過なら短縮を再依頼、を最大 max_retry 回。
-    """
-    # 1st try: summarize the draft
-    summary = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": SYSTEM_SUMMARY},
-            {"role": "user", "content": f"次の本文を、SNS投稿用の140文字以内で要約してください。\n\n本文：\n{draft}"},
-        ],
-        temperature=0.4,
-    ).choices[0].message.content.strip()
-
-    # Ensure single line (念のため)
-    summary = " ".join(summary.splitlines()).strip()
-
-    # Retry if too long
-    for _ in range(max_retry):
-        if len(summary) <= 140:
-            return summary
-
-        # ask to rewrite shorter, strictly <= 140
-        summary = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": SYSTEM_SUMMARY},
-                {"role": "user", "content": f"次の要約を、意味を保ったまま140文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
-            ],
-            temperature=0.2,
-        ).choices[0].message.content.strip()
-        summary = " ".join(summary.splitlines()).strip()
-
-    # 最後の保険：それでも超える場合は、末尾を切る（意味が欠ける可能性はあるが“厳守”優先）
-    return summary[:140]
-
-
-# ---- ボタン（本文生成 / 要約生成） ----
+# ---- ボタン ----
 
 if st.button("Begin the draft.", disabled=not text):
     # 本文生成
@@ -171,21 +126,11 @@ if st.button("Begin the draft.", disabled=not text):
     )
     st.session_state.draft_text = res.choices[0].message.content
 
-    # すぐ要約も生成（140字厳守）
-    st.session_state.summary_text = summarize_to_140_chars(st.session_state.draft_text)
-
 
 # ---- 出力（要約 → 本文） ----
 
-
-if st.session_state.summary_text:
-    st.subheader("🧠 要約（140文字以内・コピー用）")
-    st.code(st.session_state.summary_text, language="text")
-    st.caption(f"文字数: {len(st.session_state.summary_text)} / 140")
-    st.divider()
-
 if st.session_state.draft_text:
-    st.subheader("✍️ 本文（コピー用）")
+    st.subheader("✍️ Output")
     st.code(st.session_state.draft_text, language="markdown")
 
 
