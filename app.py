@@ -11,10 +11,16 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.title("Writer AI")
 
+# ---- session state 初期化 ----
+if "draft_text" not in st.session_state:
+    st.session_state.draft_text = ""
+if "summary_text" not in st.session_state:
+    st.session_state.summary_text = ""
+
 text = st.text_area("Idea Terminal", height=200)
 
-if st.button("Bigin the draft.", disabled=not text):
-    system = """あなたは思想系SNSコンテンツの編集者兼ライターです。
+# ---- プロンプト（本文） ----
+SYSTEM_DRAFT = """あなたは思想系SNSコンテンツの編集者兼ライターです。
 抽象的な文章を、一般読者にも伝わるSNS投稿用エッセイに変換する専門家です。
 
 重視する点：
@@ -83,10 +89,10 @@ if st.button("Bigin the draft.", disabled=not text):
 >>>
 
 特に、比喩の使い方、問いかけの頻度、文の長短リズムを優先的に再現してください。
-
 """
 
-    user = f"""
+def build_user_prompt_draft(src: str) -> str:
+    return f"""
 以下の文章を、SNS投稿向けの約2000文字の文章に書き換えてください。
 
 条件：
@@ -98,25 +104,86 @@ if st.button("Bigin the draft.", disabled=not text):
 ・思想エッセイ風で、読者に問いかける構成にする
 
 出力は【1パターンのみ】とし、完成度を最大化してください。
-
 文字数はパターンおよそ2000文字前後。
 
 元の文章：
 <<<
-{text}
+{src}
 >>>
 """
 
-    res = client.chat.completions.create(
+# ---- プロンプト（要約120字） ----
+SYSTEM_SUMMARY = """あなたはSNS用の超短文要約の専門家です。
+必ず「120文字以内」の日本語で要約してください。
+改行・箇条書き・引用符・前置きは禁止。要約本文のみを出力してください。
+絵文字は文中にたくさん使ってください（単語にあった絵文字以外に、語呂合わせの絵文字でも構いません）。
+
+"""
+
+def summarize_to_120_chars(draft: str, max_retry: int = 3) -> str:
+    """
+    まず要約→ 文字数チェック → 超過なら短縮を再依頼、を最大 max_retry 回。
+    """
+    # 1st try: summarize the draft
+    summary = client.chat.completions.create(
         model="gpt-4.1",
         messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
+            {"role": "system", "content": SYSTEM_SUMMARY},
+            {"role": "user", "content": f"次の本文を120文字以内で要約してください。\n\n本文：\n{draft}"},
         ],
-        temperature=0.8,
-    )
+        temperature=0.4,
+    ).choices[0].message.content.strip()
 
-    output_text = res.choices[0].message.content
+    # Ensure single line (念のため)
+    summary = " ".join(summary.splitlines()).strip()
 
-    st.subheader("Generate output")
-    st.code(output_text, language="markdown")
+    # Retry if too long
+    for _ in range(max_retry):
+        if len(summary) <= 120:
+            return summary
+
+        # ask to rewrite shorter, strictly <= 120
+        summary = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": SYSTEM_SUMMARY},
+                {"role": "user", "content": f"次の要約を、意味を保ったまま120文字以内に言い換えて短くしてください。\n\n要約：{summary}"},
+            ],
+            temperature=0.2,
+        ).choices[0].message.content.strip()
+        summary = " ".join(summary.splitlines()).strip()
+
+    # 最後の保険：それでも超える場合は、末尾を切る（意味が欠ける可能性はあるが“厳守”優先）
+    return summary[:120]
+
+
+# ---- ボタン（本文生成 / 要約生成） ----
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("本文を作る", disabled=not text):
+        res = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": SYSTEM_DRAFT},
+                {"role": "user", "content": build_user_prompt_draft(text)},
+            ],
+            temperature=0.8,
+        )
+        st.session_state.draft_text = res.choices[0].message.content
+        # 本文を作り直したら要約はリセット（混在防止）
+        st.session_state.summary_text = ""
+
+with col2:
+    if st.button("要約を作る（120文字）", disabled=not st.session_state.draft_text):
+        st.session_state.summary_text = summarize_to_120_chars(st.session_state.draft_text)
+
+# ---- 出力 ----
+if st.session_state.draft_text:
+    st.subheader("本文（コピー用）")
+    st.code(st.session_state.draft_text, language="markdown")
+
+if st.session_state.summary_text:
+    st.subheader("要約（120文字以内・コピー用）")
+    st.code(st.session_state.summary_text, language="text")
+    st.caption(f"文字数: {len(st.session_state.summary_text)} / 120")
