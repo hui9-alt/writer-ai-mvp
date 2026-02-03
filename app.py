@@ -1,35 +1,31 @@
-import time
-from pathlib import Path
-from datetime import datetime, timezone, timedelta
-import html
-
-import requests
+import os
 import streamlit as st
-import streamlit.components.v1 as components
+from dotenv import load_dotenv
+from openai import OpenAI
 
+# .env を読み込む
+load_dotenv()
+
+# APIキーを使ってクライアント作成
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.title("Writer AI")
-
-# Worker API のベースURL（Streamlit secrets）
-API_BASE = st.secrets["WORKER_API_BASE"]
 
 # ---- session state 初期化 ----
 if "draft_text" not in st.session_state:
     st.session_state.draft_text = ""
-if "job_id" not in st.session_state:
-    st.session_state.job_id = None
+if "summary_text" not in st.session_state:
+    st.session_state.summary_text = ""
 
 text = st.text_area("Idea Terminal", height=200)
 
+# ---- プロンプト（本文） ----
 
-def load_prompt(path: str) -> str:
-    # app.py と同じフォルダ基準で読む
-    p = Path(__file__).parent / path
-    return p.read_text(encoding="utf-8")
-
+def load_prompt(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 SYSTEM_DRAFT = load_prompt("prompt_draft.txt")
-
 
 def build_user_prompt_draft(src: str) -> str:
     return f"""
@@ -52,127 +48,62 @@ def build_user_prompt_draft(src: str) -> str:
 >>>
 """
 
+# ---- ボタン ----
 
-# ---- ジョブ投入 ----
 if st.button("Begin the draft.", disabled=not text):
-    user_prompt = build_user_prompt_draft(text)
 
-    try:
-        r = requests.post(
-            f"{API_BASE}/enqueue",
-            json={
-                "system": SYSTEM_DRAFT,
-                "user": user_prompt,
-                "model": "gpt-4.1",
-            },
-            timeout=30,
+    with st.status("✍️ 執筆中… 思考を構築しています", expanded=True) as status:
+
+        status.write("🧠 プロンプト準備中...")
+        user_prompt = build_user_prompt_draft(text)
+
+        status.write("🚀 OpenAI API 呼び出し中...")
+        res = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": SYSTEM_DRAFT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.8,
         )
-        r.raise_for_status()
-        st.session_state.job_id = r.json()["job_id"]
-        st.toast("✅ 投入完了")
-    except Exception as e:
-        st.error(f"enqueue 失敗: {e}")
+
+        status.write("🧹 出力を整形中...")
+
+        raw = res.choices[0].message.content
+
+        # 【タイトル】を削除
+        raw = raw.replace("【タイトル】", "").lstrip()
+
+        st.session_state.draft_text = raw
+
+        status.update(label="✅ 完成しました", state="complete")
 
 
-# ---- 結果取得（裏でポーリングするだけ。表示は最小） ----
-job_id = st.session_state.get("job_id")
 
-if job_id:
-    with st.spinner("生成中…（閉じてもOK）"):
-        stt = None
-        for _ in range(120):  # 最大240秒
-            try:
-                stt = requests.get(f"{API_BASE}/status/{job_id}", timeout=10).json().get("status")
-            except Exception:
-                stt = None
+# ---- 出力（要約 → 本文） ----
 
-            if stt in ("finished", "failed"):
-                break
-            time.sleep(2)
-
-    try:
-        rr = requests.get(f"{API_BASE}/result/{job_id}", timeout=10).json()
-        if rr.get("ready"):
-            raw = rr["result"]
-            raw = raw.replace("【タイトル】", "").strip()
-            st.session_state.draft_text = raw
-            st.toast("✅ 完成しました")
-    except Exception as e:
-        st.error(f"result 取得失敗: {e}")
-
-
-# ---- 出力表示（Copyボタン上／スマホ折り返し／くっきり表示） ----
 if st.session_state.draft_text:
+
     output = st.session_state.draft_text.strip()
     lines = output.splitlines()
 
-    title = (lines[0].strip() if lines else "").strip()
+    title = lines[0].strip()
     body = "\n".join(lines[1:]).strip()
 
-    # 出力日時（JST）
-    jst = timezone(timedelta(hours=9))
-    generated_at = datetime.now(jst).strftime("%Y-%m-%d %H:%M")
+    char_count = len(body)
 
-    # コピー対象（タイトル＋日時＋本文）
+    # コピー用の“全部入り”テキスト
     full_text_for_copy = f"""{title}
-
-出力: {generated_at}
+本文文字数：{char_count}文字
 
 {body}
 """
 
-    safe_text = html.escape(full_text_for_copy)
+    # 表示は今まで通り（見やすさ重視）
+    st.subheader(title)
+    st.caption(f"本文文字数：{char_count}文字")
 
-    components.html(
-        f"""
-        <div style="display:flex; gap:8px; align-items:center; margin: 6px 0 10px 0;">
-          <button id="copyBtn"
-            style="padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.25); background:white; font-weight:600;">
-            📋 Copy
-          </button>
-          <span id="copyMsg" style="opacity:.75; font-size: 13px;"></span>
-        </div>
+    # 右上のコピーボタンで「全部入り」をコピーできる
+    st.code(full_text_for_copy, language="markdown")
 
-        <textarea id="copyArea"
-          style="
-            width: 100%;
-            height: 380px;
-            padding: 12px;
-            box-sizing: border-box;
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,.25);
-            background: white;
-            color: #111;
-            font-size: 15px;
-            line-height: 1.55;
-            white-space: pre-wrap;
-            word-break: break-word;
-          ">{safe_text}</textarea>
 
-        <script>
-          const btn = document.getElementById("copyBtn");
-          const area = document.getElementById("copyArea");
-          const msg = document.getElementById("copyMsg");
-
-          btn.addEventListener("click", async () => {{
-            area.focus();
-            area.select();
-            try {{
-              const ok = document.execCommand("copy");
-              if (ok) {{
-                msg.textContent = "コピーしました ✅";
-                return;
-              }}
-            }} catch (e) {{}}
-
-            try {{
-              await navigator.clipboard.writeText(area.value);
-              msg.textContent = "コピーしました ✅";
-            }} catch (e) {{
-              msg.textContent = "コピーできませんでした（長押し→コピーしてね）";
-            }}
-          }});
-        </script>
-        """,
-        height=460,
-    )
