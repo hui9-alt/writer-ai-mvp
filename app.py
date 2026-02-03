@@ -1,3 +1,5 @@
+import requests
+import time
 import os
 import streamlit as st
 from dotenv import load_dotenv
@@ -10,10 +12,13 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.title("Writer AI")
+API_BASE = st.secrets["WORKER_API_BASE"]
 
 # ---- session state 初期化 ----
 if "draft_text" not in st.session_state:
     st.session_state.draft_text = ""
+if "job_id" not in st.session_state:
+    st.session_state.job_id = None
 if "summary_text" not in st.session_state:
     st.session_state.summary_text = ""
 
@@ -52,35 +57,44 @@ def build_user_prompt_draft(src: str) -> str:
 
 if st.button("Begin the draft.", disabled=not text):
 
-    with st.status("✍️ 執筆中… 思考を構築しています", expanded=True) as status:
+    user_prompt = build_user_prompt_draft(text)
 
-        status.write("🧠 プロンプト準備中...")
-        user_prompt = build_user_prompt_draft(text)
-
-        status.write("🚀 OpenAI API 呼び出し中...")
-        res = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": SYSTEM_DRAFT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.8,
+    with st.status("📮 ジョブ投入中（閉じてもOK）", expanded=True) as status:
+        r = requests.post(
+            f"{API_BASE}/enqueue",
+            params={
+                "system": SYSTEM_DRAFT,
+                "user": user_prompt,
+                "model": "gpt-4.1",
+            },
+            timeout=30,
         )
+        st.session_state.job_id = r.json()["job_id"]
+        status.update(label="✅ 投入完了", state="complete")
 
-        status.write("🧹 出力を整形中...")
-
-        raw = res.choices[0].message.content
-
-        # 【タイトル】を削除
-        raw = raw.replace("【タイトル】", "").lstrip()
-
-        st.session_state.draft_text = raw
-
-        status.update(label="✅ 完成しました", state="complete")
 
 
 
 # ---- 出力（要約 → 本文） ----
+
+job_id = st.session_state.get("job_id")
+
+if job_id:
+    with st.status("⏳ 実行中（いつでも閉じてOK）", expanded=True) as s:
+        for _ in range(120):  # 最大4分くらい待つ
+            stt = requests.get(f"{API_BASE}/status/{job_id}", timeout=10).json()["status"]
+            s.write(f"status: {stt}")
+            if stt in ("finished", "failed"):
+                break
+            time.sleep(2)
+
+        rr = requests.get(f"{API_BASE}/result/{job_id}", timeout=10).json()
+        if rr.get("ready"):
+            st.session_state.draft_text = rr["result"]
+            s.update(label="✅ 完成しました", state="complete")
+        else:
+            s.update(label="⚠️ まだ結果がありません（後で開き直してOK）", state="error")
+
 
 if st.session_state.draft_text:
 
@@ -96,6 +110,7 @@ if st.session_state.draft_text:
     st.caption(f"本文文字数：{char_count}文字")
 
     st.code(body, language="markdown")
+
 
 
 
