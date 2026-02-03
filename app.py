@@ -79,7 +79,7 @@ job_id = st.session_state.get("job_id")
 
 if job_id:
     with st.status("⏳ 実行中（いつでも閉じてOK）", expanded=True) as s:
-        for _ in range(120):  # 最大4分くらい待つ
+        for _ in range(120):
             stt = requests.get(f"{API_BASE}/status/{job_id}", timeout=10).json()["status"]
             s.write(f"status: {stt}")
             if stt in ("finished", "failed"):
@@ -87,15 +87,12 @@ if job_id:
             time.sleep(2)
 
         rr = requests.get(f"{API_BASE}/result/{job_id}", timeout=10).json()
-if rr.get("ready"):
-    raw = rr["result"]
 
-    # 【タイトル】を削除（あれば）
-    raw = raw.replace("【タイトル】", "").strip()
-
-    st.session_state.draft_text = raw
-    s.update(label="✅ 完成しました", state="complete")
-
+        if rr.get("ready"):
+            raw = rr["result"]
+            raw = raw.replace("【タイトル】", "").strip()
+            st.session_state.draft_text = raw
+            s.update(label="✅ 完成しました", state="complete")
         else:
             s.update(label="⚠️ まだ結果がありません（後で開き直してOK）", state="error")
 
@@ -107,24 +104,18 @@ if st.session_state.draft_text:
     title = (lines[0].strip() if lines else "").strip()
     body = "\n".join(lines[1:]).strip()
 
-    # 本文文字数（改行も数えるなら len(body) でOK）
     char_count = len(body)
 
-    # タイトル行の後ろに文字数を付ける
     title_with_count = f"{title}（本文{char_count}文字）"
 
-    # コピー対象：タイトル+文字数 + 本文
     full_text_for_copy = f"""{title_with_count}
 
 {body}
 """
 
-    # 表示（見やすく）
     st.subheader(title_with_count)
-
-    # コピーボタンは st.code の右上に出るので、
-    # ここに “全文（タイトル+文字数+本文）” を入れる
     st.code(full_text_for_copy, language="markdown")
+
 
 
 
