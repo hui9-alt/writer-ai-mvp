@@ -1,3 +1,6 @@
+from datetime import datetime, timezone, timedelta
+import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import time
 import os
@@ -93,7 +96,7 @@ if job_id:
         else:
             s.update(label="⚠️ まだ結果がありません（後で開き直してOK）", state="error")
 
-
+# ---- 出力表示（タイトルは上に出さない／出力日時は下に表示／コピーで全部含める） ----
 if st.session_state.draft_text:
     output = st.session_state.draft_text.strip()
     lines = output.splitlines()
@@ -101,20 +104,42 @@ if st.session_state.draft_text:
     title = (lines[0].strip() if lines else "").strip()
     body = "\n".join(lines[1:]).strip()
 
-    char_count = len(body)
+    # 出力日時（日本時間）
+    jst = timezone(timedelta(hours=9))
+    generated_at = datetime.now(jst).strftime("%Y-%m-%d %H:%M")
 
-    title_with_count = f"{title}（本文{char_count}文字）"
+    # コピー用テキスト（タイトル＋日時＋本文）
+    full_text_for_copy = f"""{title}
 
-    full_text_for_copy = f"""{title_with_count}
+出力: {generated_at}
 
 {body}
 """
 
-    st.subheader(title_with_count)
-    st.code(full_text_for_copy, language="markdown")
+    # 画面には「日時」だけ出す（タイトルは出さない）
+    st.caption(f"出力: {generated_at}")
 
+    # 折り返し表示のコピー範囲
+    st.text_area("Copy", value=full_text_for_copy, height=380, disabled=True)
 
-
-
-
-
+    # コピーボタン（押したらクリップボードへ）
+    if st.button("📋 Copy"):
+        safe = (
+            full_text_for_copy
+            .replace("\\", "\\\\")
+            .replace("`", "\\`")
+            .replace("${", "\\${")
+        )
+        components.html(
+            f"""
+            <script>
+            (async () => {{
+              try {{
+                await navigator.clipboard.writeText(`{safe}`);
+              }} catch (e) {{}}
+            }})();
+            </script>
+            """,
+            height=0,
+        )
+        st.toast("コピーしました ✅")
