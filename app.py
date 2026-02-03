@@ -4,6 +4,9 @@ import requests
 import time
 from dotenv import load_dotenv
 
+# .env を読み込む
+load_dotenv()
+
 st.title("Writer AI")
 API_BASE = st.secrets["WORKER_API_BASE"]
 
@@ -12,6 +15,8 @@ if "draft_text" not in st.session_state:
     st.session_state.draft_text = ""
 if "job_id" not in st.session_state:
     st.session_state.job_id = None
+if "summary_text" not in st.session_state:
+    st.session_state.summary_text = ""
 
 text = st.text_area("Idea Terminal", height=200)
 
@@ -83,7 +88,6 @@ if st.session_state.draft_text:
 
     # コピー対象（タイトル＋日時＋本文）
     full_text_for_copy = f"""{title}
-    文字数：{char_count}文字
 
 出力: {generated_at}
 
@@ -91,6 +95,8 @@ if st.session_state.draft_text:
 """.strip()
 
     st.subheader("Output")
-    
+
     st.code(full_text_for_copy, language="markdown")
+
+
 
