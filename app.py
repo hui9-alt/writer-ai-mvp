@@ -9,7 +9,7 @@ load_dotenv()
 # OpenAIクライアント
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.title("Writer AI（SNS投稿用に書き換え）")
+st.title("Writer AI")
 
 # セッションに保存する箱（ボタン押しても保持するため）
 if "output_text" not in st.session_state:
@@ -73,49 +73,12 @@ with col1:
         st.session_state.summary_120 = ""
 
 with col2:
-    # ========= 120文字要約 =========
-    if st.button("要約を作る（120文字）", disabled=not st.session_state.output_text):
-        sum_system = "あなたは編集者。日本語でX向けに要約する。"
-        sum_user = f"""
-次の文章をX投稿用に【120文字以内】で要約して。
-
-条件：
-- 核が一発で伝わる
-- 絵文字は1〜2個まで
-- ハッシュタグは不要
-- 120文字を1文字でも超えたら、必ず言い換えて120文字以内に収める
-
-本文：
-<<<
-{st.session_state.output_text}
->>>
-
-出力は要約文のみ（前置き不要）。
-"""
-
-        sum_res = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": sum_system},
-                {"role": "user", "content": sum_user},
-            ],
-            temperature=0.6,
-        )
-
-        st.session_state.summary_120 = sum_res.choices[0].message.content.strip()
-
-st.divider()
 
 # ========= 表示エリア =========
-st.subheader("生成結果（本文）")
+st.subheader("Output")
 if st.session_state.output_text:
     # 右上にコピー（📋）が付く
     st.code(st.session_state.output_text, language="markdown")
 else:
     st.caption("まだ本文がありません。左の「投稿文を生成 ✨」を押してください。")
 
-st.subheader("120文字要約（X向け）")
-if st.session_state.summary_120:
-    st.code(st.session_state.summary_120, language="text")
-else:
-    st.caption("まだ要約がありません。右の「要約を作る（120文字）」を押してください。")
