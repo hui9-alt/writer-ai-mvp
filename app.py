@@ -4,9 +4,6 @@ import requests
 import time
 from dotenv import load_dotenv
 
-# .env を読み込む
-load_dotenv()
-
 st.title("Writer AI")
 API_BASE = st.secrets["WORKER_API_BASE"]
 
@@ -15,8 +12,6 @@ if "draft_text" not in st.session_state:
     st.session_state.draft_text = ""
 if "job_id" not in st.session_state:
     st.session_state.job_id = None
-if "summary_text" not in st.session_state:
-    st.session_state.summary_text = ""
 
 text = st.text_area("Idea Terminal", height=200)
 
@@ -52,17 +47,7 @@ def build_user_prompt_draft(src: str) -> str:
 if st.button("Begin the draft.", disabled=not text):
     user_prompt = build_user_prompt_draft(text)
 
-    # ※ ここは元コードに「ジョブ作成API呼び出し」が載っていなかったので、
-    # 既存実装に合わせて job_id をセットしてください。
-    #
-    # 例（あなたのWorker仕様に合わせて調整）:
-    # r = requests.post(f"{API_BASE}/start", json={
-    #     "system": SYSTEM_DRAFT,
-    #     "user": user_prompt
-    # }, timeout=30).json()
-    # st.session_state.job_id = r["job_id"]
-
-# ---- 出力（要約 → 本文） ----
+# ---- 出力 ----
 job_id = st.session_state.get("job_id")
 
 if job_id:
@@ -98,6 +83,7 @@ if st.session_state.draft_text:
 
     # コピー対象（タイトル＋日時＋本文）
     full_text_for_copy = f"""{title}
+    文字数：{char_count}文字
 
 出力: {generated_at}
 
@@ -105,18 +91,6 @@ if st.session_state.draft_text:
 """.strip()
 
     st.subheader("Output")
-
-    # 1) コピーボタン（右上のアイコン）付きで表示されることが多い
-    # ※ Streamlitのバージョン/環境により見え方が少し違う場合があります
+    
     st.code(full_text_for_copy, language="markdown")
 
-    # 2) iOS向けの保険：長押しでコピーしやすいテキストエリアも併設
-    st.text_area("Copy area (長押し→コピーOK)", value=full_text_for_copy, height=380)
-
-    # 3) さらに保険：テキストとしてDLもできる
-    st.download_button(
-        "⬇️ Download as .txt",
-        data=full_text_for_copy,
-        file_name=f"draft_{generated_at.replace(':','-').replace(' ','_')}.txt",
-        mime="text/plain",
-    )
