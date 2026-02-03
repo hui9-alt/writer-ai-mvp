@@ -3,13 +3,11 @@ import time
 import os
 import streamlit as st
 from dotenv import load_dotenv
-from openai import OpenAI
 
 # .env を読み込む
 load_dotenv()
 
 # APIキーを使ってクライアント作成
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.title("Writer AI")
 API_BASE = st.secrets["WORKER_API_BASE"]
@@ -110,6 +108,7 @@ if st.session_state.draft_text:
     st.caption(f"本文文字数：{char_count}文字")
 
     st.code(body, language="markdown")
+
 
 
 
