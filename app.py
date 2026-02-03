@@ -1,13 +1,16 @@
-from datetime import datetime, timezone, timedelta
-import streamlit as st
-import requests
 import time
-from dotenv import load_dotenv
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+import html
 
-# .env を読み込む
-load_dotenv()
+import requests
+import streamlit as st
+import streamlit.components.v1 as components
+
 
 st.title("Writer AI")
+
+# Worker API のベースURL（Streamlit secrets）
 API_BASE = st.secrets["WORKER_API_BASE"]
 
 # ---- session state 初期化 ----
@@ -15,17 +18,18 @@ if "draft_text" not in st.session_state:
     st.session_state.draft_text = ""
 if "job_id" not in st.session_state:
     st.session_state.job_id = None
-if "summary_text" not in st.session_state:
-    st.session_state.summary_text = ""
 
 text = st.text_area("Idea Terminal", height=200)
 
-# ---- プロンプト（本文） ----
-def load_prompt(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
+
+def load_prompt(path: str) -> str:
+    # app.py と同じフォルダ基準で読む
+    p = Path(__file__).parent / path
+    return p.read_text(encoding="utf-8")
+
 
 SYSTEM_DRAFT = load_prompt("prompt_draft.txt")
+
 
 def build_user_prompt_draft(src: str) -> str:
     return f"""
@@ -48,43 +52,56 @@ def build_user_prompt_draft(src: str) -> str:
 >>>
 """
 
-# ---- ボタン ----
+
+# ---- ジョブ投入 ----
 if st.button("Begin the draft.", disabled=not text):
     user_prompt = build_user_prompt_draft(text)
 
-    # ※ ここは元コードに「ジョブ作成API呼び出し」が載っていなかったので、
-    # 既存実装に合わせて job_id をセットしてください。
-    #
-    # 例（あなたのWorker仕様に合わせて調整）:
-    # r = requests.post(f"{API_BASE}/start", json={
-    #     "system": SYSTEM_DRAFT,
-    #     "user": user_prompt
-    # }, timeout=30).json()
-    # st.session_state.job_id = r["job_id"]
+    try:
+        r = requests.post(
+            f"{API_BASE}/enqueue",
+            json={
+                "system": SYSTEM_DRAFT,
+                "user": user_prompt,
+                "model": "gpt-4.1",
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        st.session_state.job_id = r.json()["job_id"]
+        st.toast("✅ 投入完了")
+    except Exception as e:
+        st.error(f"enqueue 失敗: {e}")
 
-# ---- 出力（要約 → 本文） ----
+
+# ---- 結果取得（裏でポーリングするだけ。表示は最小） ----
 job_id = st.session_state.get("job_id")
 
 if job_id:
-    with st.status("⏳ 実行中（いつでも閉じてOK）", expanded=True) as s:
-        for _ in range(120):
-            stt = requests.get(f"{API_BASE}/status/{job_id}", timeout=10).json()["status"]
-            s.write(f"status: {stt}")
+    with st.spinner("生成中…（閉じてもOK）"):
+        stt = None
+        for _ in range(120):  # 最大240秒
+            try:
+                stt = requests.get(f"{API_BASE}/status/{job_id}", timeout=10).json().get("status")
+            except Exception:
+                stt = None
+
             if stt in ("finished", "failed"):
                 break
             time.sleep(2)
 
+    try:
         rr = requests.get(f"{API_BASE}/result/{job_id}", timeout=10).json()
-
         if rr.get("ready"):
             raw = rr["result"]
             raw = raw.replace("【タイトル】", "").strip()
             st.session_state.draft_text = raw
-            s.update(label="✅ 完成しました", state="complete")
-        else:
-            s.update(label="⚠️ まだ結果がありません（後で開き直してOK）", state="error")
+            st.toast("✅ 完成しました")
+    except Exception as e:
+        st.error(f"result 取得失敗: {e}")
 
-# ---- 出力表示（HTMLなし版）----
+
+# ---- 出力表示（Copyボタン上／スマホ折り返し／くっきり表示） ----
 if st.session_state.draft_text:
     output = st.session_state.draft_text.strip()
     lines = output.splitlines()
@@ -102,22 +119,60 @@ if st.session_state.draft_text:
 出力: {generated_at}
 
 {body}
-""".strip()
+"""
 
-    st.subheader("Output")
+    safe_text = html.escape(full_text_for_copy)
 
-    # 1) コピーボタン（右上のアイコン）付きで表示されることが多い
-    # ※ Streamlitのバージョン/環境により見え方が少し違う場合があります
-    st.code(full_text_for_copy, language="markdown")
+    components.html(
+        f"""
+        <div style="display:flex; gap:8px; align-items:center; margin: 6px 0 10px 0;">
+          <button id="copyBtn"
+            style="padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.25); background:white; font-weight:600;">
+            📋 Copy
+          </button>
+          <span id="copyMsg" style="opacity:.75; font-size: 13px;"></span>
+        </div>
 
-    # 2) iOS向けの保険：長押しでコピーしやすいテキストエリアも併設
-    st.text_area("Copy area (長押し→コピーOK)", value=full_text_for_copy, height=380)
+        <textarea id="copyArea"
+          style="
+            width: 100%;
+            height: 380px;
+            padding: 12px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,.25);
+            background: white;
+            color: #111;
+            font-size: 15px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+          ">{safe_text}</textarea>
 
-    # 3) さらに保険：テキストとしてDLもできる
-    st.download_button(
-        "⬇️ Download as .txt",
-        data=full_text_for_copy,
-        file_name=f"draft_{generated_at.replace(':','-').replace(' ','_')}.txt",
-        mime="text/plain",
+        <script>
+          const btn = document.getElementById("copyBtn");
+          const area = document.getElementById("copyArea");
+          const msg = document.getElementById("copyMsg");
+
+          btn.addEventListener("click", async () => {{
+            area.focus();
+            area.select();
+            try {{
+              const ok = document.execCommand("copy");
+              if (ok) {{
+                msg.textContent = "コピーしました ✅";
+                return;
+              }}
+            }} catch (e) {{}}
+
+            try {{
+              await navigator.clipboard.writeText(area.value);
+              msg.textContent = "コピーしました ✅";
+            }} catch (e) {{
+              msg.textContent = "コピーできませんでした（長押し→コピーしてね）";
+            }}
+          }});
+        </script>
+        """,
+        height=460,
     )
-
