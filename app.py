@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import html
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
@@ -96,7 +97,7 @@ if job_id:
         else:
             s.update(label="⚠️ まだ結果がありません（後で開き直してOK）", state="error")
 
-# ---- 出力表示（タイトルは上に出さない／出力日時は下に表示／コピーで全部含める） ----
+# ---- 出力表示（日時はタイトル直下に入れてコピー対象に／ボタンは上／見た目くっきり） ----
 if st.session_state.draft_text:
     output = st.session_state.draft_text.strip()
     lines = output.splitlines()
@@ -104,11 +105,11 @@ if st.session_state.draft_text:
     title = (lines[0].strip() if lines else "").strip()
     body = "\n".join(lines[1:]).strip()
 
-    # 出力日時（日本時間）
+    # 出力日時（JST）
     jst = timezone(timedelta(hours=9))
     generated_at = datetime.now(jst).strftime("%Y-%m-%d %H:%M")
 
-    # コピー用テキスト（タイトル＋日時＋本文）
+    # コピー対象（タイトル＋日時＋本文）
     full_text_for_copy = f"""{title}
 
 出力: {generated_at}
@@ -116,30 +117,67 @@ if st.session_state.draft_text:
 {body}
 """
 
-    # 画面には「日時」だけ出す（タイトルは出さない）
-    st.caption(f"出力: {generated_at}")
+    # HTMLに埋め込むのでエスケープ
+    safe_text = html.escape(full_text_for_copy)
 
-    # 折り返し表示のコピー範囲
-    st.text_area("Copy", value=full_text_for_copy, height=380, disabled=True)
+    # 画面上には「コピー欄の上にタイトル」は出さない（重複防止）
+    # 日時は「コピーされる本文内」に入っているので、別表示は不要なら消してOK
+    # st.caption(f"出力: {generated_at}")
 
-    # コピーボタン（押したらクリップボードへ）
-    if st.button("📋 Copy"):
-        safe = (
-            full_text_for_copy
-            .replace("\\", "\\\\")
-            .replace("`", "\\`")
-            .replace("${", "\\${")
-        )
-        components.html(
-            f"""
-            <script>
-            (async () => {{
-              try {{
-                await navigator.clipboard.writeText(`{safe}`);
-              }} catch (e) {{}}
-            }})();
-            </script>
-            """,
-            height=0,
-        )
-        st.toast("コピーしました ✅")
+    components.html(
+        f"""
+        <div style="display:flex; gap:8px; align-items:center; margin: 6px 0 10px 0;">
+          <button id="copyBtn"
+            style="padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.25); background:white; font-weight:600;">
+            📋 Copy
+          </button>
+          <span id="copyMsg" style="opacity:.75; font-size: 13px;"></span>
+        </div>
+
+        <textarea id="copyArea"
+          style="
+            width: 100%;
+            height: 380px;
+            padding: 12px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,.25);
+            background: white;
+            color: #111;
+            font-size: 15px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+          ">{safe_text}</textarea>
+
+        <script>
+          const btn = document.getElementById("copyBtn");
+          const area = document.getElementById("copyArea");
+          const msg = document.getElementById("copyMsg");
+
+          btn.addEventListener("click", async () => {{
+            area.focus();
+            area.select();
+            try {{
+              // まずは execCommand で互換性重視（iOSで強い）
+              const ok = document.execCommand("copy");
+              if (ok) {{
+                msg.textContent = "コピーしました ✅";
+                return;
+              }}
+            }} catch (e) {{}}
+
+            // execCommandがダメなら clipboard API
+            try {{
+              await navigator.clipboard.writeText(area.value);
+              msg.textContent = "コピーしました ✅";
+            }} catch (e) {{
+              msg.textContent = "コピーできませんでした（長押し→コピーを試してね）";
+            }}
+          }});
+        </script>
+        """,
+        height=460,
+    )
+
+
