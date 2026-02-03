@@ -51,23 +51,51 @@ def build_user_prompt_draft(src: str) -> str:
 # ---- ボタン ----
 
 if st.button("Begin the draft.", disabled=not text):
-    # 本文生成
-    res = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": SYSTEM_DRAFT},
-            {"role": "user", "content": build_user_prompt_draft(text)},
-        ],
-        temperature=0.8,
-    )
-    st.session_state.draft_text = res.choices[0].message.content
+
+    with st.status("✍️ 執筆中… 思考を構築しています", expanded=True) as status:
+
+        status.write("🧠 プロンプト準備中...")
+        user_prompt = build_user_prompt_draft(text)
+
+        status.write("🚀 OpenAI API 呼び出し中...")
+        res = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[
+                {"role": "system", "content": SYSTEM_DRAFT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.8,
+        )
+
+        status.write("🧹 出力を整形中...")
+
+        raw = res.choices[0].message.content
+
+        # 【タイトル】を削除
+        raw = raw.replace("【タイトル】", "").lstrip()
+
+        st.session_state.draft_text = raw
+
+        status.update(label="✅ 完成しました", state="complete")
+
 
 
 # ---- 出力（要約 → 本文） ----
 
 if st.session_state.draft_text:
-    st.subheader("✍️ Output")
-    st.code(st.session_state.draft_text, language="markdown")
+
+    output = st.session_state.draft_text.strip()
+    lines = output.splitlines()
+
+    title = lines[0]
+    body = "\n".join(lines[1:]).strip()
+
+    char_count = len(body)
+
+    st.subheader(title)
+    st.caption(f"本文文字数：{char_count}文字")
+
+    st.code(body, language="markdown")
 
 
 
