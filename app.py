@@ -70,9 +70,6 @@ if st.button("Begin the draft.", disabled=not text):
         st.session_state.job_id = r.json()["job_id"]
         status.update(label="✅ 投入完了", state="complete")
 
-
-
-
 # ---- 出力（要約 → 本文） ----
 
 job_id = st.session_state.get("job_id")
@@ -115,6 +112,7 @@ if st.session_state.draft_text:
 
     st.subheader(title_with_count)
     st.code(full_text_for_copy, language="markdown")
+
 
 
 
