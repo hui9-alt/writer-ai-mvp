@@ -76,6 +76,7 @@ from datetime import datetime
 
 # 出力（ドラフトが存在する場合）
 if st.session_state.draft_text:
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -94,6 +95,5 @@ if st.session_state.draft_text:
     full_output = f"{title_line}\n\n文字数: {char_count}文字　日時: {now}\n\n{body}"
 
     st.code(full_output, language="markdown")
-
 
 
