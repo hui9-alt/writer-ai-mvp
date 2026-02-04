@@ -62,46 +62,32 @@ if st.button("Begin the draft.", disabled=not text):
 
 from datetime import datetime, timedelta, timezone
 
-# 出力（ドラフトが存在する場合）
 if st.session_state.draft_text:
     st.subheader("✍️ Output")
 
-    # 出力された文章からタイトル行を取得（最初の行）
+    # 出力された文章を行ごとに分けて処理
     lines = st.session_state.draft_text.strip().splitlines()
     title_line = lines[0].strip()
 
-    # 「【タイトル】」などの文字を含んでいたら削除
+    # 「【タイトル】」の文字を削除
     title_line = title_line.replace("【タイトル】", "").strip()
 
-    # 本文の残りを結合
+    # 本文（2行目以降）
     body = "\n".join(lines[1:]).strip()
 
-    # 文字数カウント（タイトル含めて）
+    # 文字数（タイトル＋本文）
     char_count = len(title_line + body)
 
-    # 日本時間（JST）で現在時刻を取得
+    # 日本時間で現在時刻を取得
     jst = timezone(timedelta(hours=9))
     now = datetime.now(jst).strftime("%Y-%m-%d %H:%M")
 
-    # Markdown形式で整形（タイトル大きめ、文字数＋日時表示）
-    full_output = f"""### {title_line}
+    # 出力内容（Markdown形式）
+    full_output = f"""{title_line}
 
 文字数: {char_count}文字　日時: {now}
 
 {body}"""
 
     st.markdown(full_output)
-
-import streamlit.components.v1 as components
-
-st.code(full_output, language="markdown")
-
-components.html(
-    f"""
-    <button onclick="navigator.clipboard.writeText(`{full_output}`)">
-        📋 コピー
-    </button>
-    """,
-    height=40,
-)
 
