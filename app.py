@@ -94,9 +94,14 @@ if st.button("Begin the draft.", disabled=not text):
 if st.session_state.draft_text:
     st.subheader("✍️ Output")
 
-    lines = st.session_state.draft_text.strip().splitlines()
-    title_line = lines[0].strip() if lines else ""
-    body = "\n".join(lines[1:]).strip() if len(lines) > 1 else ""
+lines = [l.strip() for l in st.session_state.draft_text.splitlines() if l.strip()]
+
+# 先頭が【タイトル】なら捨てる
+if lines and "タイトル" in lines[0]:
+    lines = lines[1:]
+
+title_line = lines[0] if lines else ""
+body = "\n".join(lines[1:]) if len(lines) > 1 else ""
 
     # full_outputと同じ内容で数える（改行も含めて直感に一致）
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
@@ -115,4 +120,5 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
