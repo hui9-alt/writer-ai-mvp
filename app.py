@@ -82,12 +82,12 @@ def build_user_prompt_draft(src: str) -> str:
 if st.button("Begin the draft.", disabled=not text):
     # 本文生成
     res = client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": SYSTEM_DRAFT},
             {"role": "user", "content": build_user_prompt_draft(text)},
         ],
-        temperature=0.8,
+        temperature=0.7,
     )
     st.session_state.draft_text = res.choices[0].message.content
 
@@ -116,5 +116,3 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
-
-
