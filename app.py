@@ -17,36 +17,39 @@ st.title("Python")
 st.markdown("""
 <style>
 
-/* 全体の上余白を減らす */
+/* 全体余白を少し減らす */
 .block-container {
-    padding-top: 2rem !important;
+    padding-top: 1.5rem !important;
 }
 
-/* テキストエリアを少し上に詰める */
+/* text_area を基準コンテナにする */
 div[data-testid="stTextArea"] {
-    margin-top: -10px;
+    position: relative;
 }
 
-/* Begin the draft ボタンを右上固定 */
-div.stButton > button {
-    position: fixed;
-    top: 12px;
-    right: 16px;
-    z-index: 1000;
-
+/* ボタンを入力欄右下に配置 */
+div.stButton {
+    position: absolute;
+    right: 0px;
+    bottom: -60px;
     width: 200px;
-    height: 50px;
+}
+
+/* ボタン本体 */
+div.stButton > button {
+    width: 100%;
+    height: 52px;
     font-size: 18px;
     font-weight: bold;
     border-radius: 10px;
 }
 
-/* ホバー時ちょい気持ちよく */
+/* hover */
 div.stButton > button:hover {
     transform: scale(1.03);
 }
 
-/* 出力エリア折り返し保険 */
+/* 出力エリア折り返し */
 pre, pre code {
     white-space: pre-wrap !important;
     overflow-wrap: anywhere !important;
@@ -144,6 +147,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
