@@ -58,7 +58,7 @@ if "draft_text" not in st.session_state:
 if "summary_text" not in st.session_state:
     st.session_state.summary_text = ""
 
-text = st.text_area("Idea Terminal", height=200)
+text = st.text_area("", height=200)
 
 # ---- プロンプト（本文） ----
 
@@ -146,4 +146,5 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
