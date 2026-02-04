@@ -76,24 +76,22 @@ from datetime import datetime
 
 # 出力（ドラフトが存在する場合）
 if st.session_state.draft_text:
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+# 出力（ドラフトが存在する場合）
+if st.session_state.draft_text:
     st.subheader("✍️ Output")
 
-    # 出力された文章からタイトル行を取り出す
     lines = st.session_state.draft_text.strip().splitlines()
     title_line = lines[0].strip()
     body = "\n".join(lines[1:]).strip()
 
-    # 文字数をカウント（タイトル＋本文）
     char_count = len(title_line + body)
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
 
-now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
-
-    # 表示用にまとめる
     full_output = f"{title_line}\n\n文字数: {char_count}文字　日時: {now}\n\n{body}"
-    
-    # Markdown形式で出力
+
     st.code(full_output, language="markdown")
 
