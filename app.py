@@ -39,8 +39,8 @@ div.stButton {
 
 
 div.stButton > button {
-    width: 100%;
-    height: 60px;
+    width: 120%;
+    height: 40px;
     font-size: 22px;
     font-weight: bold;
     border-radius: 10px;
@@ -151,6 +151,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
