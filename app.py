@@ -16,12 +16,38 @@ st.title("Writer AI")
 
 st.markdown("""
 <style>
-/* 保険：st.code以外にも当たる可能性のある pre を広めに折り返す */
+
+/* 全体の上余白を減らす */
+.block-container {
+    padding-top: 2rem !important;
+}
+
+/* テキストエリアを少し上に詰める */
+div[data-testid="stTextArea"] {
+    margin-top: -10px;
+}
+
+/* Begin the draft ボタンを大きく横長に */
+div.stButton > button {
+    width: 100%;
+    height: 60px;
+    font-size: 22px;
+    font-weight: bold;
+    border-radius: 10px;
+}
+
+/* 押したとき気持ちよく */
+div.stButton > button:hover {
+    transform: scale(1.01);
+}
+
+/* 出力エリア折り返し保険 */
 pre, pre code {
     white-space: pre-wrap !important;
     overflow-wrap: anywhere !important;
     word-break: break-word !important;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -120,3 +146,4 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
