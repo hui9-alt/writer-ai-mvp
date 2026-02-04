@@ -103,10 +103,16 @@ if st.session_state.draft_text:
 
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
 
-    full_output = f"{title_line}\n\n文字数: {char_count}文字
-    日時: {now}\n\n{body}"
+　　　　full_output = f"""{title_line}
 
+　　　　文字数: {char_count}文字
+　　　　日時: {now}
+
+   {body}"""
+
+    
     st.code(full_output, language="markdown")
+
 
 
 
