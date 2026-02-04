@@ -100,8 +100,8 @@ lines = [l.strip() for l in st.session_state.draft_text.splitlines() if l.strip(
 if lines and "タイトル" in lines[0]:
     lines = lines[1:]
 
-title_line = lines[0] if lines else ""
-body = "\n".join(lines[1:]) if len(lines) > 1 else ""
+   title_line = lines[0] if lines else ""
+   body = "\n".join(lines[1:]) if len(lines) > 1 else ""
 
     # full_outputと同じ内容で数える（改行も含めて直感に一致）
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
@@ -109,10 +109,10 @@ body = "\n".join(lines[1:]) if len(lines) > 1 else ""
     # 先に仮で作って文字数を確定
     full_output_tmp = f"""{title_line}
 
-{body}"""
-    char_count = len(full_output_tmp)
+   {body}"""
+     char_count = len(full_output_tmp)
 
-    full_output = f"""{title_line}
+     full_output = f"""{title_line}
 
 文字数: {char_count}文字
 日時: {now}
@@ -120,5 +120,6 @@ body = "\n".join(lines[1:]) if len(lines) > 1 else ""
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
