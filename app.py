@@ -18,7 +18,7 @@ st.markdown("""
 <style>
 
 h1 {
-    margin-top: 40px;
+    margin-top: 50px;
 }
 
 
@@ -157,6 +157,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
