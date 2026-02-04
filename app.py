@@ -34,12 +34,12 @@ div.stButton {
 
 div.stButton {
     margin-top: -300px;
-    transform: translateX(250px);  /* +で右 / -で左 */
+    transform: translateX(230px);  /* +で右 / -で左 */
 }
 
 
 div.stButton > button {
-    width: 150%;
+    width: 200%;
     height: 40px;
     font-size: 22px;
     font-weight: bold;
@@ -151,6 +151,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
