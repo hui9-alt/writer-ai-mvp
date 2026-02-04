@@ -27,18 +27,23 @@ div[data-testid="stTextArea"] {
     margin-top: -10px;
 }
 
-/* Begin the draft ボタンを大きく横長に */
+/* Begin the draft ボタンを右上固定 */
 div.stButton > button {
-    width: 100%;
-    height: 60px;
-    font-size: 22px;
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    z-index: 1000;
+
+    width: 200px;
+    height: 50px;
+    font-size: 18px;
     font-weight: bold;
     border-radius: 10px;
 }
 
-/* 押したとき気持ちよく */
+/* ホバー時ちょい気持ちよく */
 div.stButton > button:hover {
-    transform: scale(1.01);
+    transform: scale(1.03);
 }
 
 /* 出力エリア折り返し保険 */
@@ -50,7 +55,6 @@ pre, pre code {
 
 </style>
 """, unsafe_allow_html=True)
-
 
 # ---- session state 初期化 ----
 if "draft_text" not in st.session_state:
@@ -140,6 +144,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
