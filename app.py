@@ -24,7 +24,7 @@ st.markdown("""
 
 /* テキストエリアを少し上に詰める */
 div[data-testid="stTextArea"] {
-    margin-top: -35px;
+    margin-top: -25px;
 }
 
 /* Begin the draft ボタンを大きく横長に */
@@ -152,4 +152,5 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
