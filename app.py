@@ -3,42 +3,32 @@ import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# .env を読み込む（ローカル用。Streamlit CloudではSecretsに入れる）
+# .env を読み込む
 load_dotenv()
 
-# OpenAIクライアント
+# APIキーを使ってクライアント作成
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.title("Writer AI")
 
-# セッションに保存する箱（ボタン押しても保持するため）
-if "output_text" not in st.session_state:
-    st.session_state.output_text = ""
-if "summary_120" not in st.session_state:
-    st.session_state.summary_120 = ""
+# ---- session state 初期化 ----
+if "draft_text" not in st.session_state:
+    st.session_state.draft_text = ""
+if "summary_text" not in st.session_state:
+    st.session_state.summary_text = ""
 
-text = st.text_area("文章を入力", height=200)
+text = st.text_area("Idea Terminal", height=200)
 
-# ========= 本文生成 =========
-col1, col2 = st.columns(2)
+# ---- プロンプト（本文） ----
 
-with col1:
-    if st.button("投稿文を生成 ✨", disabled=not text):
-        system = """あなたは思想系SNSコンテンツの編集者兼ライターです。
-抽象的な文章を、一般読者にも伝わるSNS投稿用エッセイに変換する専門家です。
+def load_prompt(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
-重視する点：
-- 主張の明確さ
-- 比喩による直感的理解
-- 論理的根拠の提示
-- 読後に思考が残る構成
-- SNSで読まれるテンポ
+SYSTEM_DRAFT = load_prompt("prompt_draft.txt")
 
-哲学・心理学・社会学などの専門用語を適切に織り交ぜてもよいが、
-必ず文脈の中で自然に使うこと。
-"""
-
-        user = f"""
+def build_user_prompt_draft(src: str) -> str:
+    return f"""
 以下の文章を、SNS投稿向けの約2000文字の文章に書き換えてください。
 
 条件：
@@ -48,37 +38,34 @@ with col1:
 ・「なぜそう言えるのか」という根拠を最低2つ以上入れる
 ・絵文字を適度に入れる（多すぎない）
 ・思想エッセイ風で、読者に問いかける構成にする
+・入力された文章のそのままの表現は使用しない。
 
 出力は【1パターンのみ】とし、完成度を最大化してください。
 
-文字数はおよそ2000文字前後。
-
 元の文章：
 <<<
-{text}
+{src}
 >>>
 """
 
-        res = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            temperature=0.8,
-        )
+# ---- ボタン ----
 
-        st.session_state.output_text = res.choices[0].message.content.strip()
-        # 本文を作り直したら、要約はリセット（古い要約の混在防止）
-        st.session_state.summary_120 = ""
+if st.button("Begin the draft.", disabled=not text):
+    # 本文生成
+    res = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {"role": "system", "content": SYSTEM_DRAFT},
+            {"role": "user", "content": build_user_prompt_draft(text)},
+        ],
+        temperature=0.8,
+    )
+    st.session_state.draft_text = res.choices[0].message.content
 
-with col2:
 
-# ========= 表示エリア =========
-st.subheader("Output")
-if st.session_state.output_text:
-    # 右上にコピー（📋）が付く
-    st.code(st.session_state.output_text, language="markdown")
-else:
-    st.caption("まだ本文がありません。左の「投稿文を生成 ✨」を押してください。")
+# ---- 出力（要約 → 本文） ----
+
+if st.session_state.draft_text:
+    st.subheader("✍️ Output")
+    st.code(st.session_state.draft_text, language="markdown")
 
