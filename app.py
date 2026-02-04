@@ -28,6 +28,10 @@ div[data-testid="stTextArea"] {
 }
 
 /* Begin the draft ボタンを大きく横長に */
+div.stButton {
+    margin-top: 30px;   /* ←ここで位置調整（増やすと下がる） */
+}
+
 div.stButton > button {
     width: 100%;
     height: 60px;
@@ -35,6 +39,7 @@ div.stButton > button {
     font-weight: bold;
     border-radius: 10px;
 }
+
 
 /* 押したとき気持ちよく */
 div.stButton > button:hover {
@@ -140,6 +145,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
