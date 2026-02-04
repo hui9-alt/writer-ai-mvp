@@ -2,6 +2,9 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
+from zoneinfo import ZoneInfo
+from datetime import datetime
+
 
 # .env を読み込む
 load_dotenv()
@@ -72,8 +75,6 @@ if st.button("Begin the draft.", disabled=not text):
     )
     st.session_state.draft_text = res.choices[0].message.content
 
-from datetime import datetime
-
 # 出力（ドラフトが存在する場合）
 if st.session_state.draft_text:
     st.subheader("✍️ Output")
@@ -89,3 +90,4 @@ if st.session_state.draft_text:
     full_output = f"{title_line}\n\n文字数: {char_count}文字　日時: {now}\n\n{body}"
 
     st.code(full_output, language="markdown")
+
