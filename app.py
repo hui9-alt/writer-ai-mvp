@@ -17,6 +17,11 @@ st.title("Python")
 st.markdown("""
 <style>
 
+h1 {
+    margin-top: 40px;
+}
+
+
 /* 全体の上余白を減らす */
 .block-container {
     padding-top: 2rem !important;
@@ -152,5 +157,6 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
