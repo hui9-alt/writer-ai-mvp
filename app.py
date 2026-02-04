@@ -32,6 +32,12 @@ div.stButton {
     margin-top: 30px;   /* ←ここで位置調整（増やすと下がる） */
 }
 
+div.stButton {
+    margin-top: 60px;
+    transform: translateX(60px);  /* +で右 / -で左 */
+}
+
+
 div.stButton > button {
     width: 100%;
     height: 60px;
@@ -145,6 +151,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
