@@ -96,27 +96,24 @@ if st.session_state.draft_text:
     st.subheader("✍️ Output")
 
     lines = st.session_state.draft_text.strip().splitlines()
-    title_line = lines[0].strip()
-    body = "\n".join(lines[1:]).strip()
+    title_line = lines[0].strip() if lines else ""
+    body = "\n".join(lines[1:]).strip() if len(lines) > 1 else ""
 
-    char_count = len(title_line + body)
-
+    # full_outputと同じ内容で数える（改行も含めて直感に一致）
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
 
-full_output = f"""{title_line}
+    # 先に仮で作って文字数を確定
+    full_output_tmp = f"""{title_line}
+
+{body}"""
+    char_count = len(full_output_tmp)
+
+    full_output = f"""{title_line}
 
 文字数: {char_count}文字
 日時: {now}
 
 {body}"""
 
-    
     st.code(full_output, language="markdown")
-
-
-
-
-
-
-
 
