@@ -45,10 +45,10 @@ SYSTEM_DRAFT = load_prompt("prompt_draft.txt")
 def build_user_prompt_draft(src: str) -> str:
     return f"""
     
-以下の文章をもとに、SNS投稿向けの思想エッセイを書いてください。
+以下の入力文をもとに、SNS投稿向けの思想エッセイを書いてください。
 
 目的：
-単なる要約ではなく、引用から一歩踏み込み、
+単なる要約ではなく、文章の内容から一歩踏み込み、
 現代の私たちの生き方に接続した「一つの主張」を提示すること。
 
 文字数：
@@ -57,16 +57,14 @@ def build_user_prompt_draft(src: str) -> str:
 スタイル：
 ・最初にタイトルを書く
 ・思想エッセイ風
-・絵文字を入れる
 ・入力文に関連して、現代社会や人間の生き方に対する「鋭い主張」を打ち出すこと。
 ・冒頭は、読者の思考や価値観を揺さぶる一文から始める
 ・一度あえて反対意見や一般論を出し、それを論破する
 ・なぜそう言えるのか、比喩や具体例で深掘りする
 ・現代の日常（SNS・仕事・孤独・お金、恋愛・勉強など）と結びつける
 
-
 注意：
-・引用文をそのまま使わない
+・入力文をそのまま使わない
 ・痛烈で容赦のない言葉を使う
 ・遠慮せず断言する
 ・哲学的だが分かりやすい
@@ -89,7 +87,7 @@ if st.button("Begin the draft.", disabled=not text):
             {"role": "system", "content": SYSTEM_DRAFT},
             {"role": "user", "content": build_user_prompt_draft(text)},
         ],
-        temperature=0.6,
+        temperature=0.2,
     )
     st.session_state.draft_text = res.choices[0].message.content
 
@@ -105,9 +103,11 @@ if st.session_state.draft_text:
 
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M")
 
-    full_output = f"{title_line}\n\n文字数: {char_count}文字　日時: {now}\n\n{body}"
+    full_output = f"{title_line}\n\n文字数: {char_count}文字
+    日時: {now}\n\n{body}"
 
     st.code(full_output, language="markdown")
+
 
 
 
