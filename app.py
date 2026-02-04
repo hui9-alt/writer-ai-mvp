@@ -91,3 +91,17 @@ if st.session_state.draft_text:
 {body}"""
 
     st.markdown(full_output)
+
+import streamlit.components.v1 as components
+
+st.code(full_output, language="markdown")
+
+components.html(
+    f"""
+    <button onclick="navigator.clipboard.writeText(`{full_output}`)">
+        📋 コピー
+    </button>
+    """,
+    height=40,
+)
+
