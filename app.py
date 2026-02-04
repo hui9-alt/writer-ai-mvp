@@ -12,7 +12,7 @@ load_dotenv()
 # APIキーを使ってクライアント作成
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.title("Writer AI")
+st.title("Python")
 
 st.markdown("""
 <style>
@@ -104,7 +104,7 @@ def build_user_prompt_draft(src: str) -> str:
 
 # ---- ボタン ----
 
-if st.button("Begin the draft.", disabled=not text):
+if st.button("Begin", disabled=not text):
     # 本文生成
     res = client.chat.completions.create(
         model="gpt-4.1",
@@ -146,5 +146,6 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
