@@ -33,8 +33,8 @@ div.stButton {
 }
 
 div.stButton {
-    margin-top: 60px;
-    transform: translateX(60px);  /* +で右 / -で左 */
+    margin-top: -40px;
+    transform: translateX(140px);  /* +で右 / -で左 */
 }
 
 
@@ -151,6 +151,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
