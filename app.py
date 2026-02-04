@@ -52,7 +52,7 @@ def build_user_prompt_draft(src: str) -> str:
 現代の私たちの生き方に接続した「一つの主張」を提示すること。
 
 文字数：
-約1000文字
+約2000文字
   
 スタイル：
 ・最初にタイトルを書く
@@ -62,8 +62,7 @@ def build_user_prompt_draft(src: str) -> str:
 ・一度あえて反対意見や一般論を出し、それを論破する
 ・なぜそう言えるのか、比喩や具体例で深掘りする
 ・現代の日常（SNS・仕事・孤独・お金、恋愛・勉強など）と結びつける
-
-注意：
+・あなた自身が意外だと思う観点を最低1つ含める
 ・入力文をそのまま使わない
 ・痛烈で容赦のない言葉を使う
 ・遠慮せず断言する
@@ -116,3 +115,4 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
