@@ -87,7 +87,7 @@ if st.button("Begin the draft.", disabled=not text):
             {"role": "system", "content": SYSTEM_DRAFT},
             {"role": "user", "content": build_user_prompt_draft(text)},
         ],
-        temperature=0.2,
+        temperature=0.8,
     )
     st.session_state.draft_text = res.choices[0].message.content
 
@@ -116,4 +116,5 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
