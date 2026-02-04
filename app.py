@@ -33,7 +33,7 @@ div.stButton {
 }
 
 div.stButton {
-    margin-top: -300px;
+    margin-top: -270px;
     transform: translateX(270px);  /* +で右 / -で左 */
 }
 
@@ -69,7 +69,7 @@ if "draft_text" not in st.session_state:
 if "summary_text" not in st.session_state:
     st.session_state.summary_text = ""
 
-text = st.text_area("", height=200)
+text = st.text_area("", height=250)
 
 # ---- プロンプト（本文） ----
 
@@ -151,6 +151,7 @@ if st.session_state.draft_text:
 {body}"""
 
     st.code(full_output, language="markdown")
+
 
 
 
